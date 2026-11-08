@@ -52,7 +52,8 @@ void InitCreateRenderer(void *arg)
         return;
     }
 
-    if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "dummy") == 0) {
+    if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "dummy") == 0 ||
+        SDL_strcmp(SDL_GetCurrentVideoDriver(), "wince") == 0) { /* software renderer only */
         renderer_flags = 0;
     }
 
