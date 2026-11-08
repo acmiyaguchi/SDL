@@ -1037,6 +1037,13 @@ SDL_Renderer *SW_CreateRendererForSurface(SDL_Surface *surface)
     renderer->DestroyTexture = SW_DestroyTexture;
     renderer->DestroyRenderer = SW_DestroyRenderer;
     renderer->info = SW_RenderDriver.info;
+#ifdef __WINCE__
+    /* The CE window framebuffer has no vsync, so do not claim it: with the
+       flag cleared, SDL_CreateRenderer simulates vsync (display refresh, 60 Hz)
+       when the app asks for it, and apps that read the flag (EasyRPG Player
+       turns its own frame limiter off) do not run unpaced. */
+    renderer->info.flags &= ~SDL_RENDERER_PRESENTVSYNC;
+#endif
     renderer->driverdata = data;
 
     return renderer;
