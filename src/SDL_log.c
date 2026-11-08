@@ -22,6 +22,8 @@
 
 #if defined(__WIN32__) || defined(__WINRT__) || defined(__GDK__)
 #include "core/windows/SDL_windows.h"
+#elif defined(__WINCE__)
+#include "core/wince/SDL_wince.h"
 #endif
 
 /* Simple log messages in SDL */
@@ -462,7 +464,26 @@ static HANDLE stderrHandle = NULL;
 static void SDLCALL SDL_LogOutput(void *userdata, int category, SDL_LogPriority priority,
                                   const char *message)
 {
-#if defined(__WIN32__) || defined(__WINRT__) || defined(__GDK__)
+#if defined(__WINCE__)
+    /* No console on CE: debugger output only. Apps that need a log file
+       install their own SDL_LogSetOutputFunction. */
+    {
+        char *output;
+        size_t length;
+        WCHAR *wstr;
+        SDL_bool isstack;
+
+        length = SDL_strlen(SDL_priority_prefixes[priority]) + 2 + SDL_strlen(message) + 3;
+        output = SDL_small_alloc(char, length, &isstack);
+        (void)SDL_snprintf(output, length, "%s: %s\r\n", SDL_priority_prefixes[priority], message);
+        wstr = WINCE_UTF8ToWide(output);
+        if (wstr) {
+            OutputDebugStringW(wstr);
+            SDL_free(wstr);
+        }
+        SDL_small_free(output, isstack);
+    }
+#elif defined(__WIN32__) || defined(__WINRT__) || defined(__GDK__)
     /* Way too many allocations here, urgh */
     /* Note: One can't call SDL_SetError here, since that function itself logs. */
     {

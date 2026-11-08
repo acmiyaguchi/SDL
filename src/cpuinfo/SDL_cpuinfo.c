@@ -26,6 +26,8 @@
 
 #if defined(__WIN32__) || defined(__WINRT__) || defined(__GDK__)
 #include "../core/windows/SDL_windows.h"
+#elif defined(__WINCE__)
+#include "../core/wince/SDL_wince.h"
 #endif
 #if defined(__OS2__)
 #undef HAVE_SYSCTLBYNAME
@@ -1098,6 +1100,14 @@ int SDL_GetSystemRAM(void)
             if (sysctl(mib, 2, &memsize, &len, NULL, 0) == 0) {
                 SDL_SystemRAM = (int)(memsize / (1024 * 1024));
             }
+        }
+#endif
+#ifdef __WINCE__
+        if (SDL_SystemRAM <= 0) {
+            MEMORYSTATUS stat;
+            stat.dwLength = sizeof(stat);
+            GlobalMemoryStatus(&stat);
+            SDL_SystemRAM = (int)(stat.dwTotalPhys / (1024 * 1024));
         }
 #endif
 #if defined(__WIN32__) || defined(__GDK__)

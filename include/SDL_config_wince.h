@@ -25,10 +25,10 @@
 
 #include "SDL_platform.h"
 
-/* Windows CE 6 (cegcc arm-mingw32ce). Static library only.
-   M0: every subsystem uses its dummy/stub backend; later milestones switch
-   them on here. C library functions are SDL's own (no HAVE_* for the CRT),
-   since mingw32ce's runtime is incomplete. */
+/* Windows CE 6 (cegcc arm-mingw32ce). Static library only. Subsystems are
+   switched from dummy/stub to CE backends milestone by milestone (see
+   docs/specs/sdl2-wince.md in cerf-meta). C library functions are SDL's own
+   (no HAVE_* for the CRT), since mingw32ce's runtime is incomplete. */
 
 #define HAVE_STDARG_H 1
 #define HAVE_STDDEF_H 1
@@ -44,10 +44,13 @@
 #define SDL_HAPTIC_DISABLED 1
 #define SDL_HIDAPI_DISABLED 1
 #define SDL_SENSOR_DISABLED 1
-#define SDL_LOADSO_DISABLED 1
-#define SDL_THREADS_DISABLED 1
-#define SDL_TIMERS_DISABLED 1
 #define SDL_VIDEO_DRIVER_DUMMY 1
-#define SDL_FILESYSTEM_DUMMY 1
+
+/* M1: CE backends (src/<subsystem>/wince). Condition variables use the generic
+   implementation on top of SDL mutexes and semaphores. */
+#define SDL_THREAD_WINCE 1
+#define SDL_TIMER_WINCE 1
+#define SDL_LOADSO_WINCE 1
+#define SDL_FILESYSTEM_WINCE 1
 
 #endif /* SDL_config_wince_h_ */

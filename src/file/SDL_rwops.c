@@ -32,6 +32,8 @@
 
 #if defined(__WIN32__) || defined(__GDK__)
 #include "../core/windows/SDL_windows.h"
+#elif defined(__WINCE__)
+#include "../core/wince/SDL_wince.h"
 #endif
 
 #ifdef HAVE_STDIO_H
@@ -67,7 +69,7 @@
 #include "nacl_io/nacl_io.h"
 #endif
 
-#if defined(__WIN32__) || defined(__GDK__)
+#if defined(__WIN32__) || defined(__GDK__) || defined(__WINCE__)
 
 /* Functions to read/write Win32 API file pointers */
 
@@ -309,7 +311,7 @@ static int SDLCALL windows_file_close(SDL_RWops *context)
     }
     return 0;
 }
-#endif /* defined(__WIN32__) || defined(__GDK__) */
+#endif /* defined(__WIN32__) || defined(__GDK__) || defined(__WINCE__) */
 
 #ifdef HAVE_STDIO_H
 
@@ -604,7 +606,7 @@ SDL_RWops *SDL_RWFromFile(const char *file, const char *mode)
     rwops->close = Android_JNI_FileClose;
     rwops->type = SDL_RWOPS_JNIFILE;
 
-#elif defined(__WIN32__) || defined(__GDK__)
+#elif defined(__WIN32__) || defined(__GDK__) || defined(__WINCE__)
     rwops = SDL_AllocRW();
     if (!rwops) {
         return NULL; /* SDL_SetError already setup by SDL_AllocRW() */
