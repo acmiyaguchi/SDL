@@ -956,6 +956,68 @@ int SDL_LowerBlitScaled(SDL_Surface *src, SDL_Rect *srcrect,
     return SDL_PrivateLowerBlitScaled(src, srcrect, dst, dstrect, SDL_ScaleModeNearest);
 }
 
+/* One-pass nearest stretch from XRGB8888/ARGB8888 to RGB565 (cerf-meta CE fork).
+   Same sample positions as SDL_SoftStretch (16.16, start at half a step) and
+   the same truncating 565 conversion as Blit_RGB888_RGB565, so the result
+   equals stretch-then-convert. A destination row whose source row equals the
+   previous one is copied instead of converted again. Integer only. */
+static int SoftStretch_8888_to_565(SDL_Surface *src, const SDL_Rect *srcrect,
+                                   SDL_Surface *dst, const SDL_Rect *dstrect)
+{
+    const Uint32 incx = ((Uint32)srcrect->w << 16) / (Uint32)dstrect->w;
+    const Uint32 incy = ((Uint32)srcrect->h << 16) / (Uint32)dstrect->h;
+    const int w = dstrect->w;
+    Uint32 posy = incy / 2;
+    int prev_srcy = -1;
+    Uint16 *prev_row = NULL;
+    int i, src_locked = 0, dst_locked = 0;
+
+    if (SDL_MUSTLOCK(src)) {
+        if (SDL_LockSurface(src) < 0) {
+            return -1;
+        }
+        src_locked = 1;
+    }
+    if (SDL_MUSTLOCK(dst)) {
+        if (SDL_LockSurface(dst) < 0) {
+            if (src_locked) {
+                SDL_UnlockSurface(src);
+            }
+            return -1;
+        }
+        dst_locked = 1;
+    }
+
+    for (i = 0; i < dstrect->h; i++) {
+        const int srcy = (int)(posy >> 16);
+        Uint16 *d = (Uint16 *)((Uint8 *)dst->pixels + (dstrect->y + i) * dst->pitch) + dstrect->x;
+        posy += incy;
+        if (srcy == prev_srcy) {
+            SDL_memcpy(d, prev_row, (size_t)w * 2);
+        } else {
+            const Uint32 *s = (const Uint32 *)((const Uint8 *)src->pixels +
+                                               (srcrect->y + srcy) * src->pitch) + srcrect->x;
+            Uint32 posx = incx / 2;
+            int x;
+            for (x = 0; x < w; x++) {
+                const Uint32 p = s[posx >> 16];
+                posx += incx;
+                d[x] = (Uint16)(((p >> 8) & 0xF800) | ((p >> 5) & 0x07E0) | ((p >> 3) & 0x001F));
+            }
+            prev_srcy = srcy;
+        }
+        prev_row = d;
+    }
+
+    if (dst_locked) {
+        SDL_UnlockSurface(dst);
+    }
+    if (src_locked) {
+        SDL_UnlockSurface(src);
+    }
+    return 0;
+}
+
 int SDL_PrivateLowerBlitScaled(SDL_Surface *src, SDL_Rect *srcrect,
                                SDL_Surface *dst, SDL_Rect *dstrect, SDL_ScaleMode scaleMode)
 {
@@ -978,6 +1040,12 @@ int SDL_PrivateLowerBlitScaled(SDL_Surface *src, SDL_Rect *srcrect,
             src->format->format == dst->format->format &&
             !SDL_ISPIXELFORMAT_INDEXED(src->format->format)) {
             return SDL_SoftStretch(src, srcrect, dst, dstrect);
+        } else if (!(src->map->info.flags & complex_copy_flags) &&
+                   (src->format->format == SDL_PIXELFORMAT_XRGB8888 ||
+                    src->format->format == SDL_PIXELFORMAT_ARGB8888) &&
+                   dst->format->format == SDL_PIXELFORMAT_RGB565 &&
+                   dstrect->w > 0 && dstrect->h > 0) {
+            return SoftStretch_8888_to_565(src, srcrect, dst, dstrect);
         } else {
             return SDL_LowerBlit(src, srcrect, dst, dstrect);
         }
