@@ -22,6 +22,8 @@
 
 #if defined(__WIN32__) || defined(__GDK__)
 #include "core/windows/SDL_windows.h"
+#elif defined(__WINCE__)
+#include <windows.h>
 #elif defined(__OS2__)
 #include <stdlib.h> /* _exit() */
 #elif !defined(__WINRT__)
@@ -87,7 +89,12 @@ SDL_COMPILE_TIME_ASSERT(SDL_PATCHLEVEL_max, SDL_PATCHLEVEL <= 99);
 extern SDL_NORETURN void SDL_ExitProcess(int exitcode);
 SDL_NORETURN void SDL_ExitProcess(int exitcode)
 {
-#if defined(__WIN32__) || defined(__GDK__)
+#if defined(__WINCE__)
+    TerminateProcess(GetCurrentProcess(), exitcode);
+    for (;;) {
+        ExitThread(exitcode); /* not marked noreturn in the CE headers */
+    }
+#elif defined(__WIN32__) || defined(__GDK__)
     /* "if you do not know the state of all threads in your process, it is
        better to call TerminateProcess than ExitProcess"
        https://msdn.microsoft.com/en-us/library/windows/desktop/ms682658(v=vs.85).aspx */

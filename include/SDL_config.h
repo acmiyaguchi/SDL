@@ -29,7 +29,9 @@
  */
 
 /* Add any platform that doesn't build using the configure system. */
-#if defined(__WIN32__)
+#if defined(__WINCE__)
+#include "SDL_config_wince.h"
+#elif defined(__WIN32__)
 #include "SDL_config_windows.h"
 #elif defined(__WINRT__)
 #include "SDL_config_winrt.h"

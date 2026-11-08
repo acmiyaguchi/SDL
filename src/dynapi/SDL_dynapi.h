@@ -63,6 +63,8 @@
 #define SDL_DYNAMIC_API 0 /* Turn off for static analysis, so reports are more clear. */
 #elif defined(__VITA__)
 #define SDL_DYNAMIC_API 0 /* vitasdk doesn't support dynamic linking */
+#elif defined(_WIN32_WCE) /* SDL_platform.h may not be included yet */
+#define SDL_DYNAMIC_API 0 /* static-only on Windows CE */
 #elif defined(__NGAGE__)
 #define SDL_DYNAMIC_API 0 /* The N-Gage doesn't support dynamic linking either */
 #elif defined(__3DS__)

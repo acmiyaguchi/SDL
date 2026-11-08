@@ -31,7 +31,12 @@
  */
 
 #ifndef SDL_MAIN_HANDLED
-#if defined(__WIN32__)
+#if defined(__WINCE__)
+/* On Windows CE SDL2main provides WinMain(), which converts the UTF-16
+   command line to UTF-8 argv and calls your main function. */
+#define SDL_MAIN_AVAILABLE
+
+#elif defined(__WIN32__)
 /* On Windows SDL provides WinMain(), which parses the command line and passes
    the arguments to your main function.
 

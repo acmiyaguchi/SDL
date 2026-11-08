@@ -149,7 +149,16 @@
 #define __SOLARIS__ 1
 #endif
 
-#if defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
+/* Windows CE (CE 6, cegcc arm-mingw32ce or MSVC). Not __WINDOWS__/__WIN32__:
+   the desktop Win32 paths do not apply; CE code opts in explicitly. */
+#if defined(_WIN32_WCE)
+#undef __WINCE__
+#define __WINCE__ 1
+/* cegcc predefines __WIN32__; in SDL it means desktop Win32. */
+#undef __WIN32__
+#endif
+
+#if (defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)) && !defined(__WINCE__)
 /* Try to find out if we're compiling for WinRT, GDK or non-WinRT/GDK */
 #if defined(_MSC_VER) && defined(__has_include)
 #if __has_include(<winapifamily.h>)
