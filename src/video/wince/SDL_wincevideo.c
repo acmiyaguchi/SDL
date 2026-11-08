@@ -34,6 +34,7 @@
 #include "../../events/SDL_keyboard_c.h"
 #include "../../events/SDL_touch_c.h"
 #include "SDL_wincevideo.h"
+#include "SDL_timer.h"
 
 #define WINCE_CLASS_NAME L"SDL_app"
 
@@ -196,6 +197,8 @@ static void WINCE_ShowWindow(_THIS, SDL_Window *window)
     SDL_WindowData *data = (SDL_WindowData *)window->driverdata;
     SetWindowPos(data->hwnd, HWND_TOPMOST, 0, 0, display_w, display_h, SWP_SHOWWINDOW);
     ShowWindow(data->hwnd, SW_SHOW);
+    data->shown_ticks = SDL_GetTicks();
+    data->reclaimed = SDL_FALSE;
     SetForegroundWindow(data->hwnd);
     SetFocus(data->hwnd);
     WINCE_FixWindowGeometry(window);

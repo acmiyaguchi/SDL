@@ -42,7 +42,18 @@ typedef struct
     HDC mdc;      /* memory DC holding the framebuffer DIB */
     HBITMAP hbm;
     SDL_bool pen_down;
+    Uint32 shown_ticks;     /* SDL_GetTicks() at the last ShowWindow */
+    SDL_bool reclaimed;     /* activation already taken back once */
 } SDL_WindowData;
+
+/* Posted to ourselves to take activation back (see WM_ACTIVATE). */
+#define WINCE_WM_RECLAIM (WM_APP + 0x51)
+
+/* Window activation lost to another process's window this soon after
+   ShowWindow is taken back once: launch hosts (e.g. the Sharp Brain card
+   library wrapper) bring their own window forward shortly after starting
+   the app. Disable with SDL_WINCE_RECLAIM_FOCUS=0. */
+#define WINCE_RECLAIM_WINDOW_MS 3000
 
 extern SDL_TouchID WINCE_touch_id;
 

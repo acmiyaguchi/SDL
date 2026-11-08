@@ -35,6 +35,8 @@
 #include "../../events/SDL_mouse_c.h"
 #include "../../events/SDL_touch_c.h"
 #include "../../events/SDL_windowevents_c.h"
+#include "SDL_hints.h"
+#include "SDL_timer.h"
 
 #ifndef GET_X_LPARAM
 #define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
@@ -170,7 +172,26 @@ LRESULT CALLBACK WINCE_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
         }
         return 0;
 
+    case WINCE_WM_RECLAIM:
+        SetForegroundWindow(hwnd);
+        SetFocus(hwnd);
+        return 0;
+
     case WM_ACTIVATE:
+        if (LOWORD(wParam) == WA_INACTIVE && !data->reclaimed &&
+            SDL_GetHintBoolean("SDL_WINCE_RECLAIM_FOCUS", SDL_TRUE) &&
+            !SDL_TICKS_PASSED(SDL_GetTicks(), data->shown_ticks + WINCE_RECLAIM_WINDOW_MS)) {
+            HWND fg = GetForegroundWindow();
+            DWORD pid = 0;
+            if (fg) {
+                GetWindowThreadProcessId(fg, &pid);
+            }
+            if (fg && pid != GetCurrentProcessId() && IsWindowVisible(hwnd)) {
+                data->reclaimed = SDL_TRUE;
+                PostMessageW(hwnd, WINCE_WM_RECLAIM, 0, 0);
+                return 0; /* not reported as focus loss */
+            }
+        }
         if (LOWORD(wParam) != WA_INACTIVE) {
             SDL_SendWindowEvent(data->window, SDL_WINDOWEVENT_SHOWN, 0, 0);
             SDL_SetKeyboardFocus(data->window);
