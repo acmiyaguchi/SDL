@@ -625,6 +625,8 @@ const char *SDL_GetPlatform(void)
     return "RISC OS";
 #elif defined(__SOLARIS__)
     return "Solaris";
+#elif defined(__WINCE__)
+    return "Windows CE";
 #elif defined(__WIN32__)
     return "Windows";
 #elif defined(__WINRT__)
