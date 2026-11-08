@@ -296,6 +296,15 @@ static void WINCE_CountFrame(SDL_WindowData *data, Uint64 t0, Uint64 t1)
     if (data->fps_start == (Uint64)-1) {
         return;
     }
+    if (t1 < data->fps_start || t1 < t0 ||
+        (t1 - data->fps_start) / freq > 4 * WINCE_FPS_WINDOW_MS / 1000) {
+        /* The counter went backwards or jumped (seen once in CERF): drop the
+           window instead of logging a bogus rate. */
+        data->fps_start = t1;
+        data->fps_frames = 0;
+        data->fps_present = 0;
+        return;
+    }
     data->fps_frames++;
     data->fps_present += t1 - t0;
     elapsed_ms = (t1 - data->fps_start) * 1000 / freq;
