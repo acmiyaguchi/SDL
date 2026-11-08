@@ -37,6 +37,7 @@
    GDI self-copies at the corners of the updated box. */
 
 #include "SDL_wincevideo.h"
+#include "SDL_timer.h"
 
 #ifndef BI_BITFIELDS
 #define BI_BITFIELDS 3
