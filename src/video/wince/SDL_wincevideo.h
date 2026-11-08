@@ -41,6 +41,13 @@ typedef struct
     HDC hdc;      /* window DC */
     HDC mdc;      /* memory DC holding the framebuffer DIB */
     HBITMAP hbm;
+    Uint16 *pixels;         /* the DIB's bits */
+    int pitch;
+    /* DirectDraw primary (see SDL_winceframebuffer.c); NULL when unused. */
+    HMODULE dd_library;
+    void *dd;
+    void *dd_primary;
+    SDL_bool dd_tried;
     SDL_bool pen_down;
     Uint32 shown_ticks;     /* SDL_GetTicks() at the last ShowWindow */
     SDL_bool reclaimed;     /* activation already taken back once */
