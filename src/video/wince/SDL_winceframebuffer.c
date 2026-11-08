@@ -38,6 +38,7 @@
 
 #include "SDL_wincevideo.h"
 #include "SDL_timer.h"
+#include "SDL_hints.h"
 
 #ifndef BI_BITFIELDS
 #define BI_BITFIELDS 3
