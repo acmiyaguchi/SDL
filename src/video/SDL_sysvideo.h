@@ -460,6 +460,7 @@ extern VideoBootStrap COCOA_bootstrap;
 extern VideoBootStrap X11_bootstrap;
 extern VideoBootStrap DirectFB_bootstrap;
 extern VideoBootStrap WINDOWS_bootstrap;
+extern VideoBootStrap WINCE_bootstrap;
 extern VideoBootStrap WINRT_bootstrap;
 extern VideoBootStrap HAIKU_bootstrap;
 extern VideoBootStrap PND_bootstrap;

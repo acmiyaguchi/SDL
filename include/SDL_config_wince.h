@@ -46,6 +46,10 @@
 #define SDL_SENSOR_DISABLED 1
 #define SDL_VIDEO_DRIVER_DUMMY 1
 
+/* M2/M3: GDI window + 565 DIB framebuffer, stylus as touch, keys. */
+#define SDL_VIDEO_DRIVER_WINCE 1
+#define SDL_VIDEO_RENDER_SW 1
+
 /* M1: CE backends (src/<subsystem>/wince). Condition variables use the generic
    implementation on top of SDL mutexes and semaphores. */
 #define SDL_THREAD_WINCE 1
