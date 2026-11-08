@@ -48,12 +48,15 @@ typedef struct
     void *dd;
     void *dd_primary;
     SDL_bool dd_tried;
+    Uint32 dd_retry_at;     /* SDL_GetTicks() after which a dropped primary is reopened */
+    int dd_retries;         /* reopen attempts left after lock failures */
     /* Present counter (SDL_WINCE_FPS_LOG, see SDL_winceframebuffer.c). */
     Uint64 fps_start;       /* SDL_GetPerformanceCounter() at window start */
     Uint64 fps_present;     /* summed present time, counter ticks */
     Uint32 fps_frames;
     SDL_bool fps_ddraw;     /* last present went through DirectDraw */
     SDL_bool pen_down;
+    float pen_x, pen_y;     /* last normalised pen position, for a forced release */
     Uint32 shown_ticks;     /* SDL_GetTicks() at the last ShowWindow */
     SDL_bool reclaimed;     /* activation already taken back once */
 } SDL_WindowData;

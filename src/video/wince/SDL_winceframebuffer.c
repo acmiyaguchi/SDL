@@ -177,8 +177,14 @@ static SDL_bool WINCE_DD_Open(SDL_WindowData *data)
     return SDL_TRUE;
 }
 
+#define WINCE_DD_RETRY_MS 2000
+#define WINCE_DD_MAX_RETRIES 5
+
 /* Copies the rects into the primary. SDL_FALSE means the caller must BitBlt
-   (not in front, or the lock failed; a failed lock drops DirectDraw). */
+   (not in front, or the lock failed). A failed lock or a primary that no
+   longer has the 800x480/1600 geometry drops DirectDraw; it is reopened
+   (which re-checks the geometry) after WINCE_DD_RETRY_MS, up to
+   WINCE_DD_MAX_RETRIES times per framebuffer. */
 static SDL_bool WINCE_DD_Present(SDL_WindowData *data, const SDL_Rect *rects, int numrects)
 {
     WINCE_DDSurfaceDesc desc;
@@ -187,7 +193,7 @@ static SDL_bool WINCE_DD_Present(SDL_WindowData *data, const SDL_Rect *rects, in
     int i, x0 = WINCE_DEFAULT_WIDTH, y0 = WINCE_DEFAULT_HEIGHT, x1 = 0, y1 = 0;
     HRESULT hr;
 
-    if (!data->dd_tried) {
+    if (!data->dd_tried && SDL_TICKS_PASSED(SDL_GetTicks(), data->dd_retry_at)) {
         WINCE_DD_Open(data);
     }
     if (!data->dd_primary || GetForegroundWindow() != data->hwnd) {
@@ -197,8 +203,20 @@ static SDL_bool WINCE_DD_Present(SDL_WindowData *data, const SDL_Rect *rects, in
         return SDL_FALSE;
     }
     hr = WINCE_DD_Lock(data->dd_primary, &desc);
-    if (FAILED(hr) || !desc.surface) {
+    if (SUCCEEDED(hr) && (!desc.surface || desc.width != WINCE_DEFAULT_WIDTH ||
+                          desc.height != WINCE_DEFAULT_HEIGHT || desc.pitch != WINCE_DEFAULT_WIDTH * 2)) {
+        /* Locked, but not the surface we validated at open (or no pixels):
+           unlock before dropping it, never write with the new geometry. */
+        WINCE_VT(data->dd_primary, DD_SLOT_UNLOCK, WINCE_Unlock)(data->dd_primary, NULL);
+        hr = E_FAIL;
+    }
+    if (FAILED(hr)) {
         WINCE_DD_Fail(data, "lock", hr);
+        if (data->dd_retries > 0) {
+            data->dd_retries--;
+            data->dd_tried = SDL_FALSE;
+            data->dd_retry_at = SDL_GetTicks() + WINCE_DD_RETRY_MS;
+        }
         return SDL_FALSE;
     }
     for (i = 0; i < numrects; ++i) {
@@ -272,6 +290,8 @@ int WINCE_CreateWindowFramebuffer(_THIS, SDL_Window *window, Uint32 *format, voi
     data->pixels = (Uint16 *)*pixels;
     data->pitch = *pitch;
     data->dd_tried = SDL_FALSE;
+    data->dd_retry_at = 0;
+    data->dd_retries = WINCE_DD_MAX_RETRIES;
     return 0;
 }
 

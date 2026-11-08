@@ -109,8 +109,12 @@ static void WINCE_SendPen(SDL_WindowData *data, UINT msg, LPARAM lParam)
     if (py < 0) py = 0;
     if (px >= window->w) px = window->w - 1;
     if (py >= window->h) py = window->h - 1;
-    x = (window->w > 1) ? (float)px / (float)(window->w - 1) : 0.0f;
-    y = (window->h > 1) ? (float)py / (float)(window->h - 1) : 0.0f;
+    /* Normalise by the size, as SDL's touch-to-mouse path multiplies by it:
+       pixel px maps back to px exactly. */
+    x = (window->w > 0) ? (float)px / (float)window->w : 0.0f;
+    y = (window->h > 0) ? (float)py / (float)window->h : 0.0f;
+    data->pen_x = x;
+    data->pen_y = y;
 
     switch (msg) {
     case WM_LBUTTONDOWN:
@@ -130,6 +134,16 @@ static void WINCE_SendPen(SDL_WindowData *data, UINT msg, LPARAM lParam)
             SDL_SendTouch(WINCE_touch_id, 0, window, SDL_FALSE, x, y, 1.0f);
         }
         break;
+    }
+}
+
+/* Ends a stroke whose WM_LBUTTONUP will not arrive (activation or capture
+   lost mid-drag), so SDL does not keep the finger down. */
+static void WINCE_ReleasePen(SDL_WindowData *data)
+{
+    if (data->pen_down) {
+        data->pen_down = SDL_FALSE;
+        SDL_SendTouch(WINCE_touch_id, 0, data->window, SDL_FALSE, data->pen_x, data->pen_y, 1.0f);
     }
 }
 
@@ -197,12 +211,26 @@ LRESULT CALLBACK WINCE_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
             SDL_SetKeyboardFocus(data->window);
             SDL_SetMouseFocus(data->window);
         } else {
+            WINCE_ReleasePen(data);
             if (SDL_GetKeyboardFocus() == data->window) {
                 SDL_SetKeyboardFocus(NULL);
             }
             SDL_ResetKeyboard();
         }
         return 0;
+
+#ifndef WM_CAPTURECHANGED
+#define WM_CAPTURECHANGED 0x0215
+#endif
+    case WM_CAPTURECHANGED:
+        if ((HWND)lParam != hwnd) {
+            WINCE_ReleasePen(data);
+        }
+        return 0;
+
+    case WM_CANCELMODE:
+        WINCE_ReleasePen(data);
+        break;
 
     case WM_SIZE: {
         int w = LOWORD(lParam), h = HIWORD(lParam);
