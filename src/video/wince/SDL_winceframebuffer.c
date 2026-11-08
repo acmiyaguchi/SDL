@@ -275,17 +275,57 @@ int WINCE_CreateWindowFramebuffer(_THIS, SDL_Window *window, Uint32 *format, voi
     return 0;
 }
 
+/* Frame counter: every 5 s of guest time, one log line with the presents per
+   second over that window, the mean present cost and the path taken:
+     wince: fps 23.9 frames 120 over 5016 ms, present 3.12 ms, path ddraw
+   On by default (a line per 5 s is cheap); SDL_WINCE_FPS_LOG=0 turns it off. */
+#define WINCE_FPS_WINDOW_MS 5000
+
+static void WINCE_CountFrame(SDL_WindowData *data, Uint64 t0, Uint64 t1)
+{
+    const Uint64 freq = SDL_GetPerformanceFrequency();
+    Uint64 elapsed_ms;
+
+    if (!data->fps_start) {
+        if (!SDL_GetHintBoolean("SDL_WINCE_FPS_LOG", SDL_TRUE)) {
+            data->fps_start = (Uint64)-1; /* disabled */
+            return;
+        }
+        data->fps_start = t0;
+    }
+    if (data->fps_start == (Uint64)-1) {
+        return;
+    }
+    data->fps_frames++;
+    data->fps_present += t1 - t0;
+    elapsed_ms = (t1 - data->fps_start) * 1000 / freq;
+    if (elapsed_ms >= WINCE_FPS_WINDOW_MS) {
+        /* Fixed point: fps x10 and present ms x100, no float on CE. */
+        const Uint32 fps10 = (Uint32)((Uint64)data->fps_frames * 10000 / elapsed_ms);
+        const Uint32 pres100 = (Uint32)(data->fps_present * 100000 / freq / data->fps_frames);
+        SDL_Log("wince: fps %u.%u frames %u over %u ms, present %u.%02u ms, path %s",
+                fps10 / 10, fps10 % 10, data->fps_frames, (unsigned)elapsed_ms,
+                pres100 / 100, pres100 % 100, data->fps_ddraw ? "ddraw" : "bitblt");
+        data->fps_start = t1;
+        data->fps_frames = 0;
+        data->fps_present = 0;
+    }
+}
+
 int WINCE_UpdateWindowFramebuffer(_THIS, SDL_Window *window, const SDL_Rect *rects, int numrects)
 {
     SDL_WindowData *data = (SDL_WindowData *)window->driverdata;
+    const Uint64 t0 = SDL_GetPerformanceCounter();
     int i;
-    if (WINCE_DD_Present(data, rects, numrects)) {
-        return 0;
+
+    data->fps_ddraw = WINCE_DD_Present(data, rects, numrects);
+    if (!data->fps_ddraw) {
+        for (i = 0; i < numrects; ++i) {
+            BitBlt(data->hdc, rects[i].x, rects[i].y, rects[i].w, rects[i].h,
+                   data->mdc, rects[i].x, rects[i].y, SRCCOPY);
+        }
     }
-    for (i = 0; i < numrects; ++i) {
-        BitBlt(data->hdc, rects[i].x, rects[i].y, rects[i].w, rects[i].h,
-               data->mdc, rects[i].x, rects[i].y, SRCCOPY);
-    }
+    WINCE_CountFrame(data, t0, SDL_GetPerformanceCounter());
     return 0;
 }
 
