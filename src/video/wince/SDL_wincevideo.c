@@ -86,6 +86,12 @@ static int WINCE_GetDisplayBounds(_THIS, SDL_VideoDisplay *display, SDL_Rect *re
     return 0;
 }
 
+static void WINCE_GetDisplayModes(_THIS, SDL_VideoDisplay *display)
+{
+    SDL_DisplayMode mode = display->current_mode;
+    SDL_AddDisplayMode(display, &mode);
+}
+
 static int WINCE_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode)
 {
     return 0; /* only one mode */
@@ -261,6 +267,7 @@ static SDL_VideoDevice *WINCE_CreateDevice(void)
     device->VideoQuit = WINCE_VideoQuit;
     device->GetDisplayBounds = WINCE_GetDisplayBounds;
     device->GetDisplayUsableBounds = WINCE_GetDisplayBounds;
+    device->GetDisplayModes = WINCE_GetDisplayModes;
     device->SetDisplayMode = WINCE_SetDisplayMode;
     device->PumpEvents = WINCE_PumpEvents;
     device->CreateSDLWindow = WINCE_CreateWindow;

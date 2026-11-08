@@ -2193,7 +2193,8 @@ static int video_getWindowSurface(void *arg)
     Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
     int result;
 
-    if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "dummy") == 0) {
+    if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "dummy") == 0 ||
+        SDL_strcmp(SDL_GetCurrentVideoDriver(), "wince") == 0) { /* software renderer only */
         renderer_flags = SDL_RENDERER_SOFTWARE;
     }
 

@@ -24,7 +24,11 @@
 
 /* Allow access to a raw mixing buffer */
 
+#ifdef __WINCE__
+#include "../../core/wince/SDL_wince.h"
+#else
 #include "../../core/windows/SDL_windows.h"
+#endif
 #include <mmsystem.h>
 
 #include "SDL_timer.h"
@@ -70,17 +74,26 @@ typedef struct tagWAVEOUTCAPS2W
 #define WAVE_FORMAT_IEEE_FLOAT 0x0003
 #endif
 
+#ifdef __WINCE__
+/* CE has no *CAPS2W structs (no GUIDs) and no registry device names. */
+#define WINMM_CAPS(capstyp) capstyp##W
+#define WINMM_DEVICE_NAME(caps) WINCE_WideToUTF8((caps).szPname)
+#else
+#define WINMM_CAPS(capstyp) capstyp##2W
+#define WINMM_DEVICE_NAME(caps) WIN_LookupAudioDeviceName((caps).szPname, &(caps).NameGuid)
+#endif
+
 #define DETECT_DEV_IMPL(iscap, typ, capstyp) \
 static void DetectWave##typ##Devs(void) { \
     const UINT iscapture = iscap ? 1 : 0; \
     const UINT devcount = wave##typ##GetNumDevs(); \
-    capstyp##2W caps; \
+    WINMM_CAPS(capstyp) caps; \
     SDL_AudioSpec spec; \
     UINT i; \
     SDL_zero(spec); \
     for (i = 0; i < devcount; i++) { \
         if (wave##typ##GetDevCaps(i,(LP##capstyp##W)&caps,sizeof(caps))==MMSYSERR_NOERROR) { \
-            char *name = WIN_LookupAudioDeviceName(caps.szPname,&caps.NameGuid); \
+            char *name = WINMM_DEVICE_NAME(caps); \
             if (name != NULL) { \
                 /* Note that freq/format are not filled in, as this information \
                  * is not provided by the caps struct! At best, we get possible \

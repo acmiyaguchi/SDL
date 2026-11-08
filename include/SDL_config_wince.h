@@ -39,6 +39,9 @@
 /* No GCC __sync atomics: ARMv5 has no ldrex/strex and libgcc has no
    __sync_*_4 helpers for this target. SDL_spinlock.c uses swp instead. */
 
+/* M5: waveOut/waveIn through coredll (winmm driver, CE-patched device
+   detection). The dummy driver stays available for headless tests. */
+#define SDL_AUDIO_DRIVER_WINMM 1
 #define SDL_AUDIO_DRIVER_DUMMY 1
 #define SDL_JOYSTICK_DISABLED 1
 #define SDL_HAPTIC_DISABLED 1
