@@ -1084,8 +1084,25 @@ _compare(SDL_Surface *referenceSurface, int allowable_error)
                                            RENDER_COMPARE_RMASK, RENDER_COMPARE_GMASK, RENDER_COMPARE_BMASK, RENDER_COMPARE_AMASK);
     SDLTest_AssertCheck(testSurface != NULL, "Verify result from SDL_CreateRGBSurfaceFrom is not NULL");
 
-    /* Compare surface. */
-    result = SDLTest_CompareSurfaces(testSurface, referenceSurface, allowable_error);
+    /* A window with fewer colour bits than the reference (the CE driver's
+       565 window) cannot show the reference exactly: quantise the reference
+       to the window format and back, then compare with the same limits. */
+    {
+        Uint32 wformat = SDL_GetWindowPixelFormat(window);
+        SDL_Surface *quantised = NULL;
+        if (wformat != SDL_PIXELFORMAT_UNKNOWN && SDL_BITSPERPIXEL(wformat) < 24) {
+            SDL_Surface *narrow = SDL_ConvertSurfaceFormat(referenceSurface, wformat, 0);
+            if (narrow) {
+                quantised = SDL_ConvertSurfaceFormat(narrow, referenceSurface->format->format, 0);
+                SDL_FreeSurface(narrow);
+            }
+            SDLTest_AssertCheck(quantised != NULL, "Quantise reference to window format %s", SDL_GetPixelFormatName(wformat));
+        }
+
+        /* Compare surface. */
+        result = SDLTest_CompareSurfaces(testSurface, quantised ? quantised : referenceSurface, allowable_error);
+        SDL_FreeSurface(quantised);
+    }
     SDLTest_AssertCheck(result == 0, "Validate result from SDLTest_CompareSurfaces, expected: 0, got: %i", result);
 
     /* Clean up. */
