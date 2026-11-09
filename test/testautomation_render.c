@@ -1046,6 +1046,17 @@ _hasTexAlpha(void)
     return 1;
 }
 
+/* Convert to fmt and back to the surface's own format. */
+static SDL_Surface *_quantise(SDL_Surface *surface, Uint32 fmt)
+{
+    SDL_Surface *narrow = SDL_ConvertSurfaceFormat(surface, fmt, 0), *wide = NULL;
+    if (narrow) {
+        wide = SDL_ConvertSurfaceFormat(narrow, surface->format->format, 0);
+        SDL_FreeSurface(narrow);
+    }
+    return wide;
+}
+
 /**
  * @brief Compares screen pixels with image pixels. Helper function.
  *
@@ -1085,23 +1096,23 @@ _compare(SDL_Surface *referenceSurface, int allowable_error)
     SDLTest_AssertCheck(testSurface != NULL, "Verify result from SDL_CreateRGBSurfaceFrom is not NULL");
 
     /* A window with fewer colour bits than the reference (the CE driver's
-       565 window) cannot show the reference exactly: quantise the reference
-       to the window format and back, then compare with the same limits. */
+       565 window) cannot show the reference exactly. Pass both the reference
+       and the read-back through the window format and back with the same
+       conversion, so both are expanded alike, then compare with the same
+       limits: positions and 565-level colours must still match. */
     {
         Uint32 wformat = SDL_GetWindowPixelFormat(window);
-        SDL_Surface *quantised = NULL;
-        if (wformat != SDL_PIXELFORMAT_UNKNOWN && SDL_BITSPERPIXEL(wformat) < 24) {
-            SDL_Surface *narrow = SDL_ConvertSurfaceFormat(referenceSurface, wformat, 0);
-            if (narrow) {
-                quantised = SDL_ConvertSurfaceFormat(narrow, referenceSurface->format->format, 0);
-                SDL_FreeSurface(narrow);
-            }
-            SDLTest_AssertCheck(quantised != NULL, "Quantise reference to window format %s", SDL_GetPixelFormatName(wformat));
+        SDL_Surface *qref = NULL, *qtest = NULL;
+        if (testSurface && wformat != SDL_PIXELFORMAT_UNKNOWN && SDL_BITSPERPIXEL(wformat) < 24) {
+            qref = _quantise(referenceSurface, wformat);
+            qtest = _quantise(testSurface, wformat);
+            SDLTest_AssertCheck(qref && qtest, "Quantise both surfaces to window format %s", SDL_GetPixelFormatName(wformat));
         }
 
         /* Compare surface. */
-        result = SDLTest_CompareSurfaces(testSurface, quantised ? quantised : referenceSurface, allowable_error);
-        SDL_FreeSurface(quantised);
+        result = SDLTest_CompareSurfaces(qtest ? qtest : testSurface, qref ? qref : referenceSurface, allowable_error);
+        SDL_FreeSurface(qref);
+        SDL_FreeSurface(qtest);
     }
     SDLTest_AssertCheck(result == 0, "Validate result from SDLTest_CompareSurfaces, expected: 0, got: %i", result);
 
