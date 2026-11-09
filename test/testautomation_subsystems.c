@@ -97,6 +97,11 @@ static int subsystems_dependRefCountInitAllQuitByOne(void)
     SDLTest_AssertCheck(SDL_WasInit(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_EVENTS) == 0,
                         "Check result from SDL_WasInit(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_EVENTS)");
 
+#ifdef __WINCE__
+    SDLTest_Log("Skipped on Windows CE: initialises SDL_INIT_JOYSTICK, which the CE build disables");
+    return TEST_SKIPPED;
+#endif
+
     /* Following should init SDL_INIT_EVENTS and give it +3 ref counts. */
     SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
     SDLTest_AssertPass("Call to SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK)");
@@ -169,6 +174,11 @@ static int subsystems_dependRefCountWithExtraInit(void)
     /* Ensure that we start with reset subsystems. */
     SDLTest_AssertCheck(SDL_WasInit(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_EVENTS) == 0,
                         "Check result from SDL_WasInit(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_EVENTS)");
+
+#ifdef __WINCE__
+    SDLTest_Log("Skipped on Windows CE: initialises SDL_INIT_JOYSTICK, which the CE build disables");
+    return TEST_SKIPPED;
+#endif
 
     /* Init EVENTS explicitly, +1 ref count. */
     SDL_InitSubSystem(SDL_INIT_EVENTS);

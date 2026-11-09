@@ -2016,6 +2016,11 @@ int video_setWindowCenteredOnDisplay(void *arg)
     int result;
     SDL_Rect display0, display1;
 
+#ifdef __WINCE__
+    SDLTest_Log("Skipped on Windows CE: CE windows always cover the display at (0,0)");
+    return TEST_SKIPPED;
+#endif
+
     displayNum = SDL_GetNumVideoDisplays();
     SDLTest_AssertPass("SDL_GetNumVideoDisplays()");
     SDLTest_AssertCheck(displayNum >= 1, "Validate result (current: %d, expected >= 1)", displayNum);

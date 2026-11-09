@@ -22,6 +22,11 @@ TestVirtualJoystick(void *arg)
     SDL_Joystick *joystick = NULL;
     int device_index;
 
+#ifdef __WINCE__
+    SDLTest_Log("Skipped on Windows CE: the CE build sets SDL_JOYSTICK_DISABLED");
+    return TEST_SKIPPED;
+#endif
+
     SDLTest_AssertCheck(SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == 0, "SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)");
 
     SDL_zero(desc);
