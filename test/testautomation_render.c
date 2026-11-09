@@ -1046,12 +1046,14 @@ _hasTexAlpha(void)
     return 1;
 }
 
-/* Convert to fmt and back to the surface's own format. */
+/* Convert to fmt and then to the comparison format. Both sides must end in
+   the same format: SDL expands 565 to different 32-bit formats through
+   different paths that can differ by 1. */
 static SDL_Surface *_quantise(SDL_Surface *surface, Uint32 fmt)
 {
     SDL_Surface *narrow = SDL_ConvertSurfaceFormat(surface, fmt, 0), *wide = NULL;
     if (narrow) {
-        wide = SDL_ConvertSurfaceFormat(narrow, surface->format->format, 0);
+        wide = SDL_ConvertSurfaceFormat(narrow, RENDER_COMPARE_FORMAT, 0);
         SDL_FreeSurface(narrow);
     }
     return wide;
@@ -1097,8 +1099,8 @@ _compare(SDL_Surface *referenceSurface, int allowable_error)
 
     /* A window with fewer colour bits than the reference (the CE driver's
        565 window) cannot show the reference exactly. Pass both the reference
-       and the read-back through the window format and back with the same
-       conversion, so both are expanded alike, then compare with the same
+       and the read-back through the window format into one comparison
+       format, so both are expanded alike, then compare with the same
        limits: positions and 565-level colours must still match. */
     {
         Uint32 wformat = SDL_GetWindowPixelFormat(window);
